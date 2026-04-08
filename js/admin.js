@@ -13,7 +13,7 @@ import {
   doc, query, where, orderBy, serverTimestamp, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const ADMIN_EMAILS = ['rubioquirozailyn@gmail.com', 'juanrubio2277@gmail.com'];
+const ADMIN_EMAILS = ['rubioquirozailyn@gmail.com','samuzuluaga4@gmail.com','juanrubio2277@gmail.com'];
 const WA_AILYN     = '573193696869';
 const WA_SAMUEL    = '573167719181';
 
