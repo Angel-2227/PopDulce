@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PopDulce – Pastelería · Bogotá</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Pacifico&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/catalog.css" />
+</head>
+<body>
+
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link">
+        <img src="assets/logo.png" alt="PopDulce" class="logo-img" onerror="this.style.display='none'" />
+        <span class="logo-text">PopDulce</span>
+      </a>
+      <nav class="main-nav">
+        <a href="#catalog-section">Catálogo</a>
+        <a href="#ofertas-section">Ofertas</a>
+        <a href="#about-section">Nosotros</a>
+      </nav>
+      <div class="header-actions">
+        <button class="cart-btn" id="cartBtn" aria-label="Ver pedido">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+          <span class="cart-count" id="cartCount"></span>
+        </button>
+        <a href="admin.html" class="admin-link" title="Administrar">⚙</a>
+        <button class="hamburger" id="hamburger" aria-label="Menú">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="#catalog-section" class="mobile-nav-link">Catálogo</a>
+    <a href="#ofertas-section" class="mobile-nav-link">Ofertas</a>
+    <a href="#about-section"   class="mobile-nav-link">Nosotros</a>
+    <a href="admin.html"       class="mobile-nav-link">⚙ Admin</a>
+  </nav>
+
+  <!-- STORIES -->
+  <div class="stories-strip" id="storiesStrip" style="display:none">
+    <div class="stories-strip-inner">
+      <div class="stories-track" id="storiesTrack">
+        <div class="story-skeleton"></div>
+        <div class="story-skeleton"></div>
+        <div class="story-skeleton"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-eyebrow">✦ Hecho con amor en Bogotá ✦</p>
+      <h1 class="hero-title">Postres que<br/><em>enamoran</em></h1>
+      <p class="hero-sub">Pasteles, galletas y delicias artesanales para cada momento especial.</p>
+      <div class="hero-actions">
+        <a href="#catalog-section" class="btn-primary">Ver catálogo</a>
+        <a href="https://wa.me/573193696869" target="_blank" rel="noopener" class="btn-whatsapp">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+          Escríbenos
+        </a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <svg class="cake-svg" viewBox="0 0 320 340" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="160" cy="295" rx="120" ry="18" fill="#e8c4c4" opacity="0.5"/>
+        <rect x="60" y="220" width="200" height="70" rx="12" fill="#f2a7b0"/>
+        <ellipse cx="160" cy="220" rx="100" ry="16" fill="#f7bfc6"/>
+        <rect x="75" y="155" width="170" height="68" rx="10" fill="#f9d5d8"/>
+        <ellipse cx="160" cy="155" rx="85" ry="13" fill="#fce8ea"/>
+        <rect x="90" y="100" width="140" height="58" rx="10" fill="#fff4f5"/>
+        <ellipse cx="160" cy="100" rx="70" ry="11" fill="#fff"/>
+        <path d="M100 100 Q105 118 102 128" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M130 98 Q133 120 130 132" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M160 97 Q162 119 160 131" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M190 98 Q188 120 190 132" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M218 100 Q215 118 217 128" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <rect x="135" y="68" width="10" height="32" rx="5" fill="#f7b2b7"/>
+        <rect x="155" y="60" width="10" height="40" rx="5" fill="#c5a3d4"/>
+        <rect x="175" y="65" width="10" height="35" rx="5" fill="#f7b2b7"/>
+        <ellipse cx="140" cy="65" rx="5" ry="8" fill="#ffd166" class="flame flame-1"/>
+        <ellipse cx="160" cy="56" rx="5" ry="8" fill="#ff9f1c" class="flame flame-2"/>
+        <ellipse cx="180" cy="62" rx="5" ry="8" fill="#ffd166" class="flame flame-3"/>
+        <g transform="translate(88,208)">
+          <ellipse cx="0" cy="0" rx="9" ry="11" fill="#e84855"/>
+          <path d="M-4,-8 Q0,-14 4,-8" fill="#5cb85c"/>
+          <circle cx="-2" cy="0" r="1.5" fill="#fff" opacity=".6"/>
+          <circle cx="3" cy="-4" r="1.5" fill="#fff" opacity=".6"/>
+        </g>
+        <g transform="translate(235,210)">
+          <ellipse cx="0" cy="0" rx="9" ry="11" fill="#e84855"/>
+          <path d="M-4,-8 Q0,-14 4,-8" fill="#5cb85c"/>
+          <circle cx="-2" cy="0" r="1.5" fill="#fff" opacity=".6"/>
+        </g>
+        <text x="30"  y="80"  class="star-float star-a" font-size="18" fill="#f7b2b7">✦</text>
+        <text x="265" y="120" class="star-float star-b" font-size="14" fill="#c5a3d4">✦</text>
+        <text x="50"  y="200" class="star-float star-c" font-size="10" fill="#f7b2b7">✦</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- OFFERS -->
+  <section class="offers-banner" id="ofertas-section" style="display:none">
+    <div class="offers-inner" id="offersBanner"></div>
+  </section>
+
+  <!-- CATALOG -->
+  <section class="catalog-section" id="catalog-section">
+    <div class="section-header">
+      <h2>Nuestros Productos</h2>
+      <div class="filter-bar" id="filterBar">
+        <button class="filter-btn active" data-cat="all">Todo</button>
+      </div>
+    </div>
+    <div class="products-grid" id="productsGrid">
+      <div class="product-skeleton"></div>
+      <div class="product-skeleton"></div>
+      <div class="product-skeleton"></div>
+      <div class="product-skeleton"></div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about-section" id="about-section">
+    <div class="about-inner">
+      <div class="about-text">
+        <h2>Hechos con<br/><em>corazón</em></h2>
+        <p>Somos un emprendimiento familiar que lleva la magia de la pastelería artesanal a tu mesa. Cada postre es elaborado con ingredientes seleccionados y mucho amor, desde Bogotá para todo el que lo pida.</p>
+        <a href="https://wa.me/573193696869" target="_blank" rel="noopener" class="btn-whatsapp">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+          Escríbenos al WhatsApp
+        </a>
+      </div>
+      <div class="about-image">
+        <img src="assets/logo.png" alt="PopDulce" class="about-logo" onerror="this.style.display='none'" />
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-brand">PopDulce <span>Pastelería</span></p>
+      <p class="footer-contact">📱 319 369 6869 &nbsp;|&nbsp; Bogotá, Colombia</p>
+      <p class="footer-copy">© 2026 PopDulce. Hecho con 🩷</p>
+    </div>
+  </footer>
+
+  <!-- CART DRAWER -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-header">
+      <h3>Tu Pedido</h3>
+      <button id="closeCart" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="cart-body" id="cartBody">
+      <p class="cart-empty">Aún no tienes productos. ¡Agrega algo rico! 🎂</p>
+    </div>
+    <div class="cart-footer" id="cartFooter" style="display:none">
+      <div class="cart-total">Total: <strong id="cartTotal">$0</strong></div>
+      <div class="client-form" id="clientForm">
+        <input type="text" id="clientName"  placeholder="Tu nombre" maxlength="60" />
+        <input type="tel"  id="clientPhone" placeholder="Tu número de WhatsApp" maxlength="15" />
+      </div>
+      <button class="btn-order" id="sendOrderBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="17"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        Pedir por WhatsApp
+      </button>
+    </div>
+  </aside>
+
+  <!-- STORY VIEWER -->
+  <div class="story-modal" id="storyModal" style="display:none">
+    <div class="story-progress-bar" id="storyProgressBar"></div>
+    <button class="story-close" id="storyClose">✕</button>
+    <div class="story-content" id="storyContent"></div>
+    <button class="story-prev" id="storyPrev">‹</button>
+    <button class="story-next" id="storyNext">›</button>
+  </div>
+
+  <!-- PRODUCT MODAL -->
+  <div class="product-modal-overlay" id="productModalOverlay" style="display:none">
+    <div class="product-modal" id="productModal">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-img-wrap" id="modalImgWrap"></div>
+      <div class="modal-info">
+        <span class="modal-cat" id="modalCat"></span>
+        <h2 id="modalName"></h2>
+        <p id="modalDesc"></p>
+        <div class="modal-price-row">
+          <span class="modal-price" id="modalPrice"></span>
+          <div class="modal-qty">
+            <button class="qty-btn" id="qtyMinus">−</button>
+            <span id="qtyVal">1</span>
+            <button class="qty-btn" id="qtyPlus">+</button>
+          </div>
+        </div>
+        <button class="btn-add-cart" id="modalAddCart">Agregar al pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const mobileNav = document.getElementById('mobileNav');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      mobileNav.classList.toggle('open');
+    });
+    mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      mobileNav.classList.remove('open');
+    }));
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import FIREBASE_CONFIG   from './js/firebase-config.js';
+
+    const app    = initializeApp(FIREBASE_CONFIG);
+    window._db   = getFirestore(app);
+    window._auth = getAuth(app);
+
+    const { initCatalog } = await import('./js/catalog.js');
+    const { initStories } = await import('./js/stories.js');
+    initCatalog();
+    initStories();
+  </script>
+</body>
+</html>

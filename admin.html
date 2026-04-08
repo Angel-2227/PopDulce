@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PopDulce – Admin</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Pacifico&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+
+  <!-- LOGIN -->
+  <div id="loginGate" class="login-gate">
+    <div class="login-card">
+      <img src="assets/logo.png" alt="PopDulce" class="login-logo" onerror="this.style.display='none'" />
+      <h1 class="login-title">PopDulce</h1>
+      <p class="login-sub">Panel de administración</p>
+      <div id="loginError" class="login-error" style="display:none"></div>
+      <input type="email"    id="loginEmail" placeholder="Correo electrónico" class="login-input" />
+      <input type="password" id="loginPass"  placeholder="Contraseña"         class="login-input" />
+      <button class="btn-login" id="loginBtn">Ingresar</button>
+      <div class="login-divider"><span>o</span></div>
+      <button class="btn-google-login" id="googleLoginBtn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google" />
+        Continuar con Google
+      </button>
+      <a href="index.html" class="login-back">← Volver a la tienda</a>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="dashboard" style="display:none">
+
+    <!-- Mobile header -->
+    <div class="admin-mobile-header">
+      <span class="brand-text">PopDulce</span>
+      <div style="display:flex;align-items:center;gap:.6rem">
+        <span id="userInfoMobile" style="font-size:.68rem;color:rgba(255,255,255,.45)"></span>
+        <button class="btn-menu-toggle" id="menuToggle">☰</button>
+      </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="assets/logo.png" alt="PopDulce" onerror="this.style.display='none'" />
+        <span>PopDulce</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-panel="orders">
+          <span class="nav-icon">📦</span> Pedidos
+          <span class="badge-count" id="pendingBadge"></span>
+        </button>
+        <button class="nav-item" data-panel="products">
+          <span class="nav-icon">🍰</span> Productos
+        </button>
+        <button class="nav-item" data-panel="stories">
+          <span class="nav-icon">📸</span> Stories
+        </button>
+        <button class="nav-item" data-panel="analytics">
+          <span class="nav-icon">📊</span> Estadísticas
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info" id="userInfoSidebar"></div>
+        <button class="btn-logout" id="logoutBtn">Cerrar sesión</button>
+        <a href="index.html" style="font-size:.75rem;color:rgba(255,255,255,.3);padding:.3rem .5rem;display:block">← Ver tienda</a>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main class="main-content">
+
+      <!-- PEDIDOS -->
+      <section class="panel" id="panel-orders">
+        <div class="panel-header">
+          <h2>Pedidos</h2>
+          <select id="orderFilter" class="filter-select">
+            <option value="pending">Pendientes</option>
+            <option value="approved">Aprobados</option>
+            <option value="rejected">Rechazados</option>
+            <option value="all">Todos</option>
+          </select>
+        </div>
+        <div id="ordersList" class="orders-list">
+          <p class="loading-text">Cargando pedidos...</p>
+        </div>
+      </section>
+
+      <!-- PRODUCTOS -->
+      <section class="panel" id="panel-products" style="display:none">
+        <div class="panel-header">
+          <h2>Productos</h2>
+          <button class="btn-panel-action" id="newProductBtn">+ Nuevo producto</button>
+        </div>
+        <div id="adminProductsList" class="admin-products-list">
+          <p class="loading-text">Cargando productos...</p>
+        </div>
+
+        <!-- Product form -->
+        <div class="product-form-overlay" id="productFormOverlay" style="display:none">
+          <div class="product-form-modal">
+            <h3 id="productFormTitle">Nuevo Producto</h3>
+            <input type="hidden" id="editProductId" />
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" id="fp-name" placeholder="Ej: Torta de Fresas" />
+              </div>
+              <div class="form-group">
+                <label>Categoría *</label>
+                <input type="text" id="fp-category" placeholder="Ej: Tortas"
+                       list="categorySuggestions" autocomplete="off" />
+                <datalist id="categorySuggestions"></datalist>
+              </div>
+              <div class="form-group">
+                <label>Precio (COP) *</label>
+                <input type="number" id="fp-price" placeholder="65000" />
+              </div>
+              <div class="form-group">
+                <label>Precio original (tachado)</label>
+                <input type="number" id="fp-original-price" placeholder="Opcional" />
+              </div>
+              <div class="form-group form-full">
+                <label>Descripción</label>
+                <textarea id="fp-description" rows="3" placeholder="Describe el producto..."></textarea>
+              </div>
+              <div class="form-group form-full">
+                <label>URL de imagen (Drive, Imgur, Cloudinary…)</label>
+                <input type="url" id="fp-image" placeholder="https://drive.google.com/file/d/..." />
+                <small>Pega el enlace de Drive tal cual. La conversión es automática.</small>
+              </div>
+              <div class="form-group">
+                <label>Emoji (sin imagen)</label>
+                <input type="text" id="fp-emoji" placeholder="🎂" maxlength="4" />
+              </div>
+              <div class="form-group">
+                <label>Insignia</label>
+                <select id="fp-badge">
+                  <option value="">Sin insignia</option>
+                  <option value="New">Nuevo</option>
+                  <option value="Popular">Popular</option>
+                  <option value="Sale">Oferta</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Orden en catálogo</label>
+                <input type="number" id="fp-order" placeholder="1" />
+              </div>
+              <div class="form-group" style="justify-content:flex-end">
+                <label style="flex-direction:row;align-items:center;gap:.45rem;text-transform:none;letter-spacing:0">
+                  <input type="checkbox" id="fp-active" checked />
+                  Visible en catálogo
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-cancel" id="cancelProductForm">Cancelar</button>
+              <button class="btn-save"   id="saveProductBtn">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STORIES -->
+      <section class="panel" id="panel-stories" style="display:none">
+        <div class="panel-header">
+          <h2>Stories / Estados</h2>
+          <button class="btn-panel-action" id="newStoryBtn">+ Nueva story</button>
+        </div>
+        <div id="adminStoriesList" class="admin-stories-list">
+          <p class="loading-text">Cargando stories...</p>
+        </div>
+
+        <!-- Story form -->
+        <div class="product-form-overlay" id="storyFormOverlay" style="display:none">
+          <div class="product-form-modal">
+            <h3 id="storyFormTitle">Nueva Story</h3>
+            <input type="hidden" id="editStoryId" />
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Título</label>
+                <input type="text" id="sf-title" placeholder="Oferta del día 🎂" />
+              </div>
+              <div class="form-group">
+                <label>Tipo</label>
+                <select id="sf-type">
+                  <option value="image">Imagen</option>
+                  <option value="video">Video</option>
+                </select>
+              </div>
+              <div class="form-group form-full">
+                <label>Caption</label>
+                <textarea id="sf-caption" rows="2" placeholder="Texto que aparece en la story"></textarea>
+              </div>
+              <div class="form-group form-full">
+                <label>URL de imagen / thumbnail</label>
+                <input type="url" id="sf-thumbnail" placeholder="https://drive.google.com/file/d/..." />
+              </div>
+              <div class="form-group form-full">
+                <label>URL de video (solo si tipo = video)</label>
+                <input type="url" id="sf-video" placeholder="https://..." />
+              </div>
+              <div class="form-group">
+                <label>Botón CTA – texto</label>
+                <input type="text" id="sf-cta-text" placeholder="Ver más" />
+              </div>
+              <div class="form-group">
+                <label>Botón CTA – URL</label>
+                <input type="url" id="sf-cta-url" placeholder="https://..." />
+              </div>
+              <div class="form-group">
+                <label>Emoji (sin imagen)</label>
+                <input type="text" id="sf-emoji" placeholder="🎂" maxlength="4" />
+              </div>
+              <div class="form-group" style="justify-content:flex-end">
+                <label style="flex-direction:row;align-items:center;gap:.45rem;text-transform:none;letter-spacing:0">
+                  <input type="checkbox" id="sf-active" checked />
+                  Activa
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-cancel" id="cancelStoryForm">Cancelar</button>
+              <button class="btn-save"   id="saveStoryBtn">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section class="panel" id="panel-analytics" style="display:none">
+        <div class="panel-header">
+          <h2>Estadísticas</h2>
+          <select id="analyticsMonth" class="filter-select"></select>
+        </div>
+        <div id="analyticsContent">
+          <p class="loading-text">Selecciona el mes en el selector de arriba.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Firebase + admin -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import FIREBASE_CONFIG   from './js/firebase-config.js';
+
+    const app    = initializeApp(FIREBASE_CONFIG);
+    window._db   = getFirestore(app);
+    window._auth = getAuth(app);
+
+    const { initAdmin } = await import('./js/admin.js');
+    initAdmin();
+  </script>
+</body>
+</html>
