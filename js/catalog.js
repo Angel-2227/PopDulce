@@ -274,7 +274,7 @@ function updateCartUI() {
 }
 window._removeFromCart = id => { cart = cart.filter(i => i.id !== id); updateCartUI(); };
 
-// ── Enviar pedido → WhatsApp + Firestore ──────────────────────
+// ── Enviar pedido → Modal selección → WhatsApp + Firestore ───
 async function sendOrder() {
   const name  = document.getElementById('clientName').value.trim();
   const phone = document.getElementById('clientPhone').value.trim();
@@ -284,11 +284,11 @@ async function sendOrder() {
 
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const lines = cart.map(i => `  • ${i.name} × ${i.qty} = ${fmt(i.price * i.qty)}`).join('\n');
-
-  const text = encodeURIComponent(
+  const text  = encodeURIComponent(
     `¡Hola PopDulce! 🎂\n\nSoy *${name}* y quiero hacer este pedido:\n\n${lines}\n\n*Total: ${fmt(total)}*\n\nMi número: ${phone}\n\nQuedo atento/a a la confirmación. ¡Gracias! 🩷`
   );
 
+  // Save to Firestore first
   try {
     await addDoc(collection(window._db, 'orders'), {
       clientName: name, clientPhone: phone,
@@ -297,15 +297,129 @@ async function sendOrder() {
     });
   } catch (e) { console.warn('Firestore write error:', e); }
 
-  // Abre WhatsApp de Ailyn (número principal de pedidos)
-  window.open(`https://wa.me/${WA_AILYN}?text=${text}`, '_blank');
+  // Show contact picker modal
+  showContactPicker(text, name, total);
+}
 
-  cart = [];
-  document.getElementById('clientName').value  = '';
-  document.getElementById('clientPhone').value = '';
-  updateCartUI();
-  closeCart();
-  showToast('🎉 ¡Pedido enviado! Te confirmamos pronto.');
+function showContactPicker(waText, clientName, total) {
+  // Remove any existing modal
+  document.getElementById('pdContactModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'pdContactModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:500;
+    background:rgba(46,34,40,.62);backdrop-filter:blur(8px);
+    display:flex;align-items:flex-end;justify-content:center;
+    animation:fadeInBg .22s ease;
+  `;
+
+  modal.innerHTML = `
+    <style>
+      @keyframes fadeInBg { from{opacity:0} to{opacity:1} }
+      @keyframes slideUpSheet { from{transform:translateY(100%)} to{transform:translateY(0)} }
+      .pd-sheet {
+        background:#fff; border-radius:28px 28px 0 0;
+        width:100%; max-width:480px;
+        padding:1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom));
+        box-shadow:0 -12px 48px rgba(46,34,40,.22);
+        animation:slideUpSheet .32s cubic-bezier(.34,1.4,.64,1);
+      }
+      .pd-sheet-handle {
+        width:40px;height:4px;border-radius:4px;
+        background:var(--rose-light);margin:0 auto 1.2rem;
+      }
+      .pd-sheet h3 {
+        font-family:var(--font-display);font-size:1.15rem;
+        color:var(--charcoal);text-align:center;margin-bottom:.35rem;
+      }
+      .pd-sheet p {
+        font-size:.82rem;color:var(--warm-gray);
+        text-align:center;margin-bottom:1.2rem;line-height:1.55;
+      }
+      .pd-contact-btn {
+        display:flex;align-items:center;gap:.85rem;
+        width:100%;padding:.9rem 1.1rem;border-radius:16px;
+        background:var(--rose-pale);border:1.5px solid var(--rose-light);
+        margin-bottom:.65rem;cursor:pointer;
+        transition:background .18s,border-color .18s,transform .18s;
+        font-family:var(--font-body);text-decoration:none;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .pd-contact-btn:hover,.pd-contact-btn:active {
+        background:var(--rose-light);border-color:var(--rose);
+        transform:translateY(-2px);
+      }
+      .pd-contact-avatar {
+        width:46px;height:46px;border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        font-size:1.5rem;flex-shrink:0;
+      }
+      .pd-contact-info { display:flex;flex-direction:column;text-align:left; }
+      .pd-contact-name { font-weight:700;font-size:.92rem;color:var(--charcoal); }
+      .pd-contact-num  { font-size:.76rem;color:var(--warm-gray);margin-top:.1rem; }
+      .pd-wa-chip {
+        margin-left:auto;background:#25D366;color:#fff;
+        border-radius:20px;padding:.22rem .65rem;font-size:.68rem;font-weight:700;
+        white-space:nowrap;flex-shrink:0;
+      }
+      .pd-sheet-cancel {
+        width:100%;padding:.72rem;border-radius:12px;
+        background:transparent;color:var(--warm-gray);
+        font-size:.85rem;font-family:var(--font-body);cursor:pointer;
+        margin-top:.2rem;transition:background .18s;
+      }
+      .pd-sheet-cancel:hover { background:var(--rose-pale); }
+    </style>
+    <div class="pd-sheet" id="pdSheet">
+      <div class="pd-sheet-handle"></div>
+      <h3>¿Con quién quieres hablar? 💬</h3>
+      <p>Ambos reciben pedidos y te responderán pronto 🩷</p>
+      <a class="pd-contact-btn" id="pdBtnAilyn" href="https://wa.me/${WA_AILYN}?text=${waText}" target="_blank" rel="noopener">
+        <div class="pd-contact-avatar" style="background:#fce8ea">🧁</div>
+        <div class="pd-contact-info">
+          <span class="pd-contact-name">Ailyn</span>
+          <span class="pd-contact-num">319 369 6869</span>
+        </div>
+        <span class="pd-wa-chip">WhatsApp</span>
+      </a>
+      <a class="pd-contact-btn" id="pdBtnSamuel" href="https://wa.me/${WA_SAMUEL}?text=${waText}" target="_blank" rel="noopener">
+        <div class="pd-contact-avatar" style="background:#ede0f5">🍰</div>
+        <div class="pd-contact-info">
+          <span class="pd-contact-name">Samuel</span>
+          <span class="pd-contact-num">316 771 9181</span>
+        </div>
+        <span class="pd-wa-chip">WhatsApp</span>
+      </a>
+      <button class="pd-sheet-cancel" id="pdSheetCancel">Cancelar</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+
+  const closeModal = () => {
+    modal.remove();
+    document.body.style.overflow = '';
+  };
+
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.getElementById('pdSheetCancel').addEventListener('click', closeModal);
+
+  // After clicking any contact, clear cart
+  ['pdBtnAilyn','pdBtnSamuel'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => {
+      setTimeout(() => {
+        closeModal();
+        cart = [];
+        document.getElementById('clientName').value  = '';
+        document.getElementById('clientPhone').value = '';
+        updateCartUI();
+        closeCart();
+        showToast('🎉 ¡Pedido enviado! Te confirmamos pronto.');
+      }, 300);
+    });
+  });
 }
 
 // ── Toast ─────────────────────────────────────────────────────

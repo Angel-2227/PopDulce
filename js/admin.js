@@ -42,6 +42,7 @@ export function initAdmin() {
   setupAuth();
   setupNavigation();
   setupMobileSidebar();
+  setupAdminBottomNav();
 }
 
 // ── Auth ──────────────────────────────────────────────────────
@@ -122,6 +123,42 @@ function setupNavigation() {
     });
   });
   document.getElementById('orderFilter')?.addEventListener('change', e => loadOrders(e.target.value));
+}
+
+function setupAdminBottomNav() {
+  document.querySelectorAll('.admin-bottom-nav .admin-bn-item[data-panel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Trigger the same panel as sidebar nav items
+      const panel = btn.dataset.panel;
+      const sidebarBtn = document.querySelector(`.nav-item[data-panel="${panel}"]`);
+      if (sidebarBtn) sidebarBtn.click();
+      // Update active state in bottom nav
+      document.querySelectorAll('.admin-bn-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Keep bottom nav in sync when sidebar nav items are clicked
+  document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
+    item.addEventListener('click', () => {
+      const panel = item.dataset.panel;
+      document.querySelectorAll('.admin-bn-item').forEach(b => b.classList.remove('active'));
+      const abnBtn = document.getElementById(`abn-${panel}`);
+      if (abnBtn) abnBtn.classList.add('active');
+    });
+  });
+
+  // Sync pending badge to bottom nav
+  const sidebarBadge = document.getElementById('pendingBadge');
+  const abnBadge     = document.getElementById('abnPendingBadge');
+  if (sidebarBadge && abnBadge) {
+    const obs = new MutationObserver(() => {
+      const val = sidebarBadge.textContent;
+      if (val) { abnBadge.textContent = val; abnBadge.style.display = 'flex'; }
+      else      { abnBadge.style.display = 'none'; }
+    });
+    obs.observe(sidebarBadge, { childList:true, characterData:true, subtree:true });
+  }
 }
 
 function setupMobileSidebar() {

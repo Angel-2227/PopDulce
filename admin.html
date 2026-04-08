@@ -244,6 +244,35 @@
       </section>
 
     </main>
+
+    <!-- Bottom Navigation Bar (mobile) -->
+    <nav class="admin-bottom-nav" aria-label="Navegación admin">
+      <div class="admin-bottom-nav-inner">
+        <button class="admin-bn-item active" data-panel="orders" id="abn-orders">
+          <div class="abn-icon" style="position:relative">
+            📦
+            <span class="abn-badge" id="abnPendingBadge" style="display:none"></span>
+          </div>
+          <span>Pedidos</span>
+        </button>
+        <button class="admin-bn-item" data-panel="products" id="abn-products">
+          <div class="abn-icon">🍰</div>
+          <span>Productos</span>
+        </button>
+        <button class="admin-bn-item" data-panel="stories" id="abn-stories">
+          <div class="abn-icon">📸</div>
+          <span>Stories</span>
+        </button>
+        <button class="admin-bn-item" data-panel="analytics" id="abn-analytics">
+          <div class="abn-icon">📊</div>
+          <span>Stats</span>
+        </button>
+        <a href="index.html" class="admin-bn-item" id="abn-store">
+          <div class="abn-icon">🏪</div>
+          <span>Tienda</span>
+        </a>
+      </div>
+    </nav>
   </div>
 
   <!-- Firebase + admin -->
