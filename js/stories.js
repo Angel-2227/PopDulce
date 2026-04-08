@@ -115,17 +115,17 @@ function renderCurrentStory() {
   const content = document.getElementById('storyContent');
   if (story.type === 'video' && story.videoUrl) {
     content.innerHTML = `
-      <video autoplay muted playsinline style="width:100%;height:85vh;object-fit:cover;border-radius:var(--radius-lg)">
+      <video autoplay muted playsinline style="width:100%;height:100%;object-fit:contain;border-radius:var(--radius-lg)">
         <source src="${story.videoUrl}" />
       </video>
       <div class="story-caption"><h4>${story.title||''}</h4><p>${story.caption||''}</p></div>`;
   } else {
     const bg = story.thumbnailUrl || '';
     const bgStyle = bg
-      ? `background-image:url('${bg}');background-size:cover;background-position:center;`
+      ? `background-image:url('${bg}');background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#000;`
       : `background:linear-gradient(135deg,var(--rose-deep),var(--lavender));`;
     content.innerHTML = `
-      <div style="width:100%;height:85vh;border-radius:var(--radius-lg);position:relative;${bgStyle}">
+      <div style="width:100%;height:100%;border-radius:var(--radius-lg);position:relative;${bgStyle}">
         ${!bg?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:4.5rem">${story.emoji||'🎂'}</div>`:''}
         <div class="story-caption">
           <h4>${story.title||'PopDulce'}</h4>
