@@ -1,5 +1,5 @@
 // ============================================================
-//  PopDulce – catalog.js  (v2)
+//  PopDulce – catalog.js  (v3)
 //  Catálogo · Carrito · Pedido → WhatsApp + Firestore
 // ============================================================
 
@@ -21,18 +21,10 @@ const fmt = (n) => new Intl.NumberFormat('es-CO', {
   style: 'currency', currency: 'COP', maximumFractionDigits: 0
 }).format(n);
 
-/**
- * Convierte URLs de Google Drive al formato lh3.googleusercontent.com
- * que carga correctamente en <img> sin problemas CORS.
- * Ejemplo: https://drive.google.com/file/d/FILE_ID/view?usp=drive_link
- * → https://lh3.googleusercontent.com/d/FILE_ID
- */
 function toDriveImgUrl(url) {
   if (!url) return '';
-  // /file/d/ID/...
   const m1 = url.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
   if (m1) return `https://lh3.googleusercontent.com/d/${m1[1]}`;
-  // ?id=ID o open?id=ID
   const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
   if (m2) return `https://lh3.googleusercontent.com/d/${m2[1]}`;
   return url;
@@ -42,6 +34,20 @@ export async function initCatalog() {
   await loadProducts();
   setupCart();
   setupProductModal();
+  setupWriteUsButtons();
+  setupReviewForm();
+  await loadPublicReviews();
+}
+
+// ── Botones "Escríbenos" (sin pedido, solo contacto) ─────────
+function setupWriteUsButtons() {
+  document.querySelectorAll('.btn-write-us').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const defaultMsg = encodeURIComponent('¡Hola PopDulce! 🎂 Quiero más información sobre sus productos.');
+      showContactPicker(defaultMsg, null, null);
+    });
+  });
 }
 
 // ── Cargar productos ──────────────────────────────────────────
@@ -66,7 +72,6 @@ async function loadProducts() {
 
   renderOffers();
 
-  // Filtros por categoría
   const cats = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
   filterBar.innerHTML = '';
   cats.forEach(cat => {
@@ -197,54 +202,70 @@ function openProductModal(p) {
   currentProduct = p; currentQty = 1;
   document.getElementById('qtyVal').textContent = 1;
   const wrap = document.getElementById('modalImgWrap');
-  wrap.innerHTML = p.imageUrl
-    ? `<img src="${p.imageUrl}" alt="${p.name}"
-         onerror="this.parentElement.innerHTML='<span style=\\'font-size:5rem\\'>${p.emoji||'🍰'}</span>'" />`
-    : `<span style="font-size:5rem">${p.emoji || '🍰'}</span>`;
-  document.getElementById('modalCat').textContent   = p.category || 'Pastelería';
+  if (p.imageUrl) {
+    wrap.innerHTML = `<img src="${p.imageUrl}" alt="${p.name}"
+      onerror="this.outerHTML='<div style=\\'font-size:4rem;text-align:center;padding:1.5rem\\'>${p.emoji||'🍰'}</div>'" />`;
+  } else {
+    wrap.innerHTML = `<div style="font-size:4rem;text-align:center;padding:1.5rem">${p.emoji||'🍰'}</div>`;
+  }
+  document.getElementById('modalCat').textContent   = p.category || '';
   document.getElementById('modalName').textContent  = p.name;
   document.getElementById('modalDesc').textContent  = p.description || '';
   document.getElementById('modalPrice').textContent = fmt(p.price);
   document.getElementById('productModalOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
+
 function closeModal() {
   document.getElementById('productModalOverlay').style.display = 'none';
   document.body.style.overflow = '';
-  currentProduct = null;
 }
 
 // ── Carrito ───────────────────────────────────────────────────
 function setupCart() {
-  document.getElementById('cartBtn').addEventListener('click', openCart);
-  document.getElementById('closeCart').addEventListener('click', closeCart);
-  document.getElementById('cartOverlay').addEventListener('click', closeCart);
-  document.getElementById('sendOrderBtn').addEventListener('click', sendOrder);
+  const cartBtn     = document.getElementById('cartBtn');
+  const closeCartEl = document.getElementById('closeCart');
+  const overlay     = document.getElementById('cartOverlay');
+  const sendBtn     = document.getElementById('sendOrderBtn');
+
+  cartBtn?.addEventListener('click',  openCart);
+  closeCartEl?.addEventListener('click', closeCart);
+  overlay?.addEventListener('click',  closeCart);
+  sendBtn?.addEventListener('click',  sendOrder);
 }
+
 function openCart() {
   document.getElementById('cartDrawer').classList.add('open');
   document.getElementById('cartOverlay').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
+
 function closeCart() {
   document.getElementById('cartDrawer').classList.remove('open');
   document.getElementById('cartOverlay').classList.remove('active');
   document.body.style.overflow = '';
 }
-function addToCart(product, qty = 1) {
-  const ex = cart.find(i => i.id === product.id);
-  ex ? (ex.qty += qty) : cart.push({ ...product, qty });
+
+function addToCart(p, qty) {
+  const existing = cart.find(i => i.id === p.id);
+  if (existing) existing.qty += qty;
+  else cart.push({ ...p, qty });
   updateCartUI();
-  showToast(`✓ ${product.name} agregado`);
+  showToast(`🛒 ${p.name} agregado`);
 }
+
 function updateCartUI() {
   const count = cart.reduce((s, i) => s + i.qty, 0);
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const countEl = document.getElementById('cartCount');
-  countEl.textContent = count || '';
-  document.getElementById('cartTotal').textContent = fmt(total);
+  if (countEl) countEl.textContent = count || '';
+  const totalEl = document.getElementById('cartTotal');
+  if (totalEl) totalEl.textContent = fmt(total);
+
   const body   = document.getElementById('cartBody');
   const footer = document.getElementById('cartFooter');
+  if (!body) return;
+
   if (!cart.length) {
     body.innerHTML = '<p class="cart-empty">Aún no tienes productos. ¡Agrega algo rico! 🎂</p>';
     footer.style.display = 'none';
@@ -288,7 +309,6 @@ async function sendOrder() {
     `¡Hola PopDulce! 🎂\n\nSoy *${name}* y quiero hacer este pedido:\n\n${lines}\n\n*Total: ${fmt(total)}*\n\nMi número: ${phone}\n\nQuedo atento/a a la confirmación. ¡Gracias! 🩷`
   );
 
-  // Save to Firestore first
   try {
     await addDoc(collection(window._db, 'orders'), {
       clientName: name, clientPhone: phone,
@@ -297,14 +317,14 @@ async function sendOrder() {
     });
   } catch (e) { console.warn('Firestore write error:', e); }
 
-  // Show contact picker modal
   showContactPicker(text, name, total);
 }
 
-function showContactPicker(waText, clientName, total) {
-  // Remove any existing modal
+// ── Selector de contacto (también usado por botones Escríbenos) ──
+export function showContactPicker(waText, clientName, total) {
   document.getElementById('pdContactModal')?.remove();
 
+  const isOrder = clientName && total;
   const modal = document.createElement('div');
   modal.id = 'pdContactModal';
   modal.style.cssText = `
@@ -373,8 +393,8 @@ function showContactPicker(waText, clientName, total) {
     </style>
     <div class="pd-sheet" id="pdSheet">
       <div class="pd-sheet-handle"></div>
-      <h3>¿Con quién quieres hablar? 💬</h3>
-      <p>Ambos reciben pedidos y te responderán pronto 🩷</p>
+      <h3>${isOrder ? '¿Con quién quieres hablar? 💬' : 'Contáctanos 🩷'}</h3>
+      <p>${isOrder ? 'Ambos reciben pedidos y te responderán pronto 🩷' : 'Elige con quién chatear — ambos estamos disponibles'}</p>
       <a class="pd-contact-btn" id="pdBtnAilyn" href="https://wa.me/${WA_AILYN}?text=${waText}" target="_blank" rel="noopener">
         <div class="pd-contact-avatar" style="background:#fce8ea">🧁</div>
         <div class="pd-contact-info">
@@ -406,19 +426,112 @@ function showContactPicker(waText, clientName, total) {
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   document.getElementById('pdSheetCancel').addEventListener('click', closeModal);
 
-  // After clicking any contact, clear cart
-  ['pdBtnAilyn','pdBtnSamuel'].forEach(id => {
-    document.getElementById(id).addEventListener('click', () => {
-      setTimeout(() => {
-        closeModal();
-        cart = [];
-        document.getElementById('clientName').value  = '';
-        document.getElementById('clientPhone').value = '';
-        updateCartUI();
-        closeCart();
-        showToast('🎉 ¡Pedido enviado! Te confirmamos pronto.');
-      }, 300);
+  if (isOrder) {
+    ['pdBtnAilyn','pdBtnSamuel'].forEach(id => {
+      document.getElementById(id).addEventListener('click', () => {
+        setTimeout(() => {
+          closeModal();
+          cart = [];
+          document.getElementById('clientName').value  = '';
+          document.getElementById('clientPhone').value = '';
+          updateCartUI();
+          closeCart();
+          showToast('🎉 ¡Pedido enviado! Te confirmamos pronto.');
+        }, 300);
+      });
     });
+  } else {
+    ['pdBtnAilyn','pdBtnSamuel'].forEach(id => {
+      document.getElementById(id)?.addEventListener('click', () => {
+        setTimeout(closeModal, 300);
+      });
+    });
+  }
+}
+
+// ── Reseñas públicas ──────────────────────────────────────────
+async function loadPublicReviews() {
+  const container = document.getElementById('reviewsGrid');
+  if (!container) return;
+  try {
+    const snap = await getDocs(
+      query(collection(window._db, 'reviews'),
+        where('approved', '==', true),
+        orderBy('createdAt', 'desc'))
+    );
+    const reviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!reviews.length) {
+      container.innerHTML = '<p style="color:var(--warm-gray);text-align:center;grid-column:1/-1">¡Sé el primero en dejar una reseña! 🩷</p>';
+      return;
+    }
+    container.innerHTML = reviews.map(r => {
+      const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+      const d = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
+      const dateStr = d.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+      return `
+        <div class="review-card">
+          <div class="review-stars">${stars}</div>
+          <p class="review-text">"${r.text}"</p>
+          <div class="review-author">
+            <span class="review-name">— ${r.name}</span>
+            <span class="review-date">${dateStr}</span>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    console.warn('Reviews error:', e);
+  }
+}
+
+function setupReviewForm() {
+  const form = document.getElementById('reviewForm');
+  if (!form) return;
+
+  // Star rating interaction
+  const stars = form.querySelectorAll('.star-input');
+  let selectedRating = 5;
+  stars.forEach(star => {
+    star.addEventListener('click', () => {
+      selectedRating = parseInt(star.dataset.value);
+      stars.forEach(s => {
+        s.classList.toggle('active', parseInt(s.dataset.value) <= selectedRating);
+      });
+    });
+    star.addEventListener('mouseover', () => {
+      const val = parseInt(star.dataset.value);
+      stars.forEach(s => s.classList.toggle('hover', parseInt(s.dataset.value) <= val));
+    });
+    star.addEventListener('mouseout', () => {
+      stars.forEach(s => s.classList.remove('hover'));
+    });
+  });
+  // init 5 stars active
+  stars.forEach(s => s.classList.add('active'));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('reviewName').value.trim();
+    const text = document.getElementById('reviewText').value.trim();
+    if (!name || !text) { showToast('⚠️ Completa tu nombre y opinión', 'warn'); return; }
+
+    const btn = form.querySelector('.btn-submit-review');
+    btn.textContent = 'Enviando...'; btn.disabled = true;
+
+    try {
+      await addDoc(collection(window._db, 'reviews'), {
+        name, text, rating: selectedRating,
+        approved: false,
+        createdAt: serverTimestamp()
+      });
+      showToast('🎉 ¡Gracias por tu reseña! La publicaremos pronto.');
+      document.getElementById('reviewName').value = '';
+      document.getElementById('reviewText').value = '';
+      selectedRating = 5;
+      stars.forEach(s => s.classList.add('active'));
+    } catch (err) {
+      showToast('⚠️ Error al enviar. Intenta de nuevo.', 'warn');
+    }
+    btn.textContent = 'Enviar reseña'; btn.disabled = false;
   });
 }
 

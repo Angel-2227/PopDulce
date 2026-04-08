@@ -1,6 +1,6 @@
 // ============================================================
-//  PopDulce – admin.js  (v2)
-//  Auth · Pedidos · Productos · Stories · Analytics
+//  PopDulce – admin.js  (v3)
+//  Auth · Pedidos · Productos · Stories · Analytics · Reseñas
 // ============================================================
 
 import {
@@ -14,8 +14,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const ADMIN_EMAILS = ['rubioquirozailyn@gmail.com', 'juanrubio2277@gmail.com'];
-const WA_AILYN     = '573193696869';   // Ailyn
-const WA_SAMUEL    = '573167719181';   // Samuel
+const WA_AILYN     = '573193696869';
+const WA_SAMUEL    = '573167719181';
 
 const fmt = n => new Intl.NumberFormat('es-CO', {
   style:'currency', currency:'COP', maximumFractionDigits:0
@@ -120,6 +120,7 @@ function setupNavigation() {
       if (panel === 'products' && !window._productsLoaded) { loadAdminProducts(); window._productsLoaded = true; }
       if (panel === 'stories'  && !window._storiesLoaded)  { loadAdminStories();  window._storiesLoaded  = true; }
       if (panel === 'analytics') loadAnalytics();
+      if (panel === 'reviews')   loadAdminReviews();
     });
   });
   document.getElementById('orderFilter')?.addEventListener('change', e => loadOrders(e.target.value));
@@ -128,17 +129,14 @@ function setupNavigation() {
 function setupAdminBottomNav() {
   document.querySelectorAll('.admin-bottom-nav .admin-bn-item[data-panel]').forEach(btn => {
     btn.addEventListener('click', () => {
-      // Trigger the same panel as sidebar nav items
       const panel = btn.dataset.panel;
       const sidebarBtn = document.querySelector(`.nav-item[data-panel="${panel}"]`);
       if (sidebarBtn) sidebarBtn.click();
-      // Update active state in bottom nav
       document.querySelectorAll('.admin-bn-item').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
 
-  // Keep bottom nav in sync when sidebar nav items are clicked
   document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
     item.addEventListener('click', () => {
       const panel = item.dataset.panel;
@@ -148,7 +146,6 @@ function setupAdminBottomNav() {
     });
   });
 
-  // Sync pending badge to bottom nav
   const sidebarBadge = document.getElementById('pendingBadge');
   const abnBadge     = document.getElementById('abnPendingBadge');
   if (sidebarBadge && abnBadge) {
@@ -266,7 +263,6 @@ async function loadAdminProducts() {
   }
   renderAdminProducts();
   setupProductForm();
-  // Fill category suggestions datalist
   const cats = [...new Set(adminProducts.map(p => p.category).filter(Boolean))];
   const dl = document.getElementById('categorySuggestions');
   if (dl) dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
@@ -322,7 +318,6 @@ function openProductForm(product = null) {
   document.getElementById('fp-order').value          = product?.order ?? '';
   document.getElementById('fp-active').checked       = product?.active !== false;
 
-  // Actualizar datalist de categorías
   const cats = [...new Set(adminProducts.map(p => p.category).filter(Boolean))];
   const dl   = document.getElementById('categorySuggestions');
   if (dl) dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
@@ -347,7 +342,6 @@ async function saveProduct() {
   };
   if (!data.name)  { alert('El nombre es obligatorio.'); return; }
   if (!data.price) { alert('El precio es obligatorio.'); return; }
-  // Remove nullish
   Object.keys(data).forEach(k => { if (data[k] === null || data[k] === '') delete data[k]; });
 
   const db = window._db;
@@ -480,16 +474,76 @@ window._deleteStory = async id => {
   }
 };
 
+// ── RESEÑAS (admin) ───────────────────────────────────────────
+let adminReviews = [];
+
+async function loadAdminReviews() {
+  const list = document.getElementById('adminReviewsList');
+  if (!list) return;
+  list.innerHTML = '<p class="loading-text">Cargando reseñas...</p>';
+  try {
+    const snap = await getDocs(
+      query(collection(window._db, 'reviews'), orderBy('createdAt', 'desc'))
+    );
+    adminReviews = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+  } catch (e) {
+    list.innerHTML = `<p class="loading-text">Error: ${e.message}</p>`; return;
+  }
+  renderAdminReviews();
+}
+
+function renderAdminReviews() {
+  const list = document.getElementById('adminReviewsList');
+  if (!adminReviews.length) {
+    list.innerHTML = '<p class="loading-text">Aún no hay reseñas.</p>'; return;
+  }
+  list.innerHTML = adminReviews.map(r => {
+    const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5-(r.rating||5));
+    return `
+      <div class="admin-review-card ${r.approved ? 'approved' : 'pending'}">
+        <div class="arc-stars">${stars}</div>
+        <div class="arc-text">"${r.text}"</div>
+        <div class="arc-author">— ${r.name} &nbsp;<span style="font-size:.7rem;color:var(--warm-gray)">${fmtDate(r.createdAt)}</span></div>
+        <div class="arc-status">${r.approved ? '🟢 Publicada' : '⏳ Pendiente'}</div>
+        <div class="arc-actions">
+          ${!r.approved ? `<button class="btn-approve" onclick="window._approveReview('${r.id}')">✓ Publicar</button>` : ''}
+          ${r.approved  ? `<button class="btn-reject"  onclick="window._hideReview('${r.id}')">Ocultar</button>` : ''}
+          <button class="btn-delete" onclick="window._deleteReview('${r.id}')">🗑 Eliminar</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window._approveReview = async id => {
+  await updateDoc(doc(window._db, 'reviews', id), { approved: true });
+  const r = adminReviews.find(x => x.id === id);
+  if (r) r.approved = true;
+  renderAdminReviews();
+};
+window._hideReview = async id => {
+  await updateDoc(doc(window._db, 'reviews', id), { approved: false });
+  const r = adminReviews.find(x => x.id === id);
+  if (r) r.approved = false;
+  renderAdminReviews();
+};
+window._deleteReview = async id => {
+  if (confirm('¿Eliminar esta reseña permanentemente?')) {
+    await deleteDoc(doc(window._db, 'reviews', id));
+    adminReviews = adminReviews.filter(r => r.id !== id);
+    renderAdminReviews();
+  }
+};
+
 // ── ANALYTICS ─────────────────────────────────────────────────
 async function loadAnalytics() {
   const db      = window._db;
   const content = document.getElementById('analyticsContent');
 
-  // Selector de mes
   const monthSel = document.getElementById('analyticsMonth');
   if (!monthSel.options.length) {
     const now = new Date();
-    for (let i = 0; i < 6; i++) {
+    // Generate options for the next 2 years from current month, and back 12 months
+    for (let i = -2; i < 24; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const opt = document.createElement('option');
       opt.value = `${d.getFullYear()}-${d.getMonth()}`;
@@ -511,7 +565,7 @@ async function loadAnalytics() {
     const snap = await getDocs(
       query(collection(db, 'orders'), orderBy('createdAt', 'asc'))
     );
-    allOrders = snap.docs.map(d => d.data()).filter(o => {
+    allOrders = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(o => {
       if (!o.createdAt) return false;
       const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
       return d >= start && d <= end;
@@ -521,34 +575,57 @@ async function loadAnalytics() {
     content.innerHTML = '<p class="loading-text">Configura Firebase para ver estadísticas.</p>'; return;
   }
 
-  const totalVentas  = approvedOrders.reduce((s, o) => s + (o.total || 0), 0);
-  const numAprobados = approvedOrders.length;
-  const numPendientes = allOrders.filter(o => o.status === 'pending').length;
-  const numRechazados = allOrders.filter(o => o.status === 'rejected').length;
+  const totalVentas    = approvedOrders.reduce((s, o) => s + (o.total || 0), 0);
+  const numAprobados   = approvedOrders.length;
+  const numPendientes  = allOrders.filter(o => o.status === 'pending').length;
+  const numRechazados  = allOrders.filter(o => o.status === 'rejected').length;
 
-  // Productos más vendidos
-  const productCounts = {};
+  // Productos vendidos con detalle de clientes
+  const productMap = {};
   approvedOrders.forEach(o => {
+    const fecha = o.createdAt?.toDate ? o.createdAt.toDate() : new Date();
+    const fechaStr = fecha.toLocaleDateString('es-CO', { day:'2-digit', month:'short' });
     (o.items || []).forEach(i => {
-      if (!productCounts[i.name]) productCounts[i.name] = { qty:0, revenue:0 };
-      productCounts[i.name].qty     += i.qty;
-      productCounts[i.name].revenue += i.subtotal || (i.price * i.qty);
+      if (!productMap[i.name]) productMap[i.name] = { qty:0, revenue:0, sales:[] };
+      productMap[i.name].qty     += i.qty;
+      productMap[i.name].revenue += i.subtotal || (i.price * i.qty);
+      productMap[i.name].sales.push({
+        client: o.clientName,
+        qty: i.qty,
+        subtotal: i.subtotal || (i.price * i.qty),
+        date: fechaStr
+      });
     });
   });
-  const topProducts = Object.entries(productCounts).sort((a,b) => b[1].qty - a[1].qty).slice(0, 8);
+
+  const topProducts = Object.entries(productMap).sort((a,b) => b[1].revenue - a[1].revenue);
   const maxQty = topProducts[0]?.[1]?.qty || 1;
 
-  // Distribución 50/50 (ajusta los porcentajes aquí si es necesario)
+  // Distribución 50/50 (ajusta aquí si es necesario)
   const pctAilyn  = 0.5;
   const pctSamuel = 0.5;
   const partAilyn  = totalVentas * pctAilyn;
   const partSamuel = totalVentas * pctSamuel;
 
+  // Build detailed sales table rows
+  const salesTableRows = topProducts.map(([name, data]) => {
+    const clientsDetail = data.sales.map(s =>
+      `<span style="display:inline-block;margin:.15rem .3rem .15rem 0;padding:.12rem .5rem;background:var(--rose-pale);border-radius:20px;font-size:.7rem">${s.client} × ${s.qty} (${s.date})</span>`
+    ).join('');
+    return `
+      <tr>
+        <td style="font-weight:600;padding:.6rem .5rem">${name}</td>
+        <td style="text-align:center;padding:.6rem .5rem">${data.qty}</td>
+        <td style="padding:.4rem .5rem;font-size:.78rem;line-height:1.6">${clientsDetail}</td>
+        <td style="text-align:right;font-weight:600;padding:.6rem .5rem;color:var(--rose-deep)">${fmt(data.revenue)}</td>
+      </tr>`;
+  }).join('');
+
   content.innerHTML = `
     <!-- KPIs -->
     <div class="analytics-grid">
       <div class="stat-card">
-        <div class="stat-label">Total vendido</div>
+        <div class="stat-label">Total ingresos</div>
         <div class="stat-value rose">${fmt(totalVentas)}</div>
       </div>
       <div class="stat-card">
@@ -569,7 +646,7 @@ async function loadAnalytics() {
       </div>
       <div class="stat-card">
         <div class="stat-label">Productos distintos</div>
-        <div class="stat-value">${Object.keys(productCounts).length}</div>
+        <div class="stat-value">${Object.keys(productMap).length}</div>
       </div>
     </div>
 
@@ -597,12 +674,35 @@ async function loadAnalytics() {
       * Solo se cuentan pedidos aprobados. Para cambiar el porcentaje, edita pctAilyn / pctSamuel en js/admin.js → loadAnalytics().
     </p>
 
-    <!-- Top productos -->
+    <!-- Tabla detallada de ventas por producto -->
     ${topProducts.length ? `
-      <h3 style="font-family:var(--font-display);font-size:1.1rem;margin:1.6rem 0 .75rem;color:var(--charcoal)">🏆 Más vendidos</h3>
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;margin:1.8rem 0 .75rem;color:var(--charcoal)">📋 Ventas por producto</h3>
+      <div style="background:#fff;border-radius:var(--radius-lg);padding:0;overflow:hidden;box-shadow:var(--shadow-card)">
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem;font-family:var(--font-body)">
+          <thead>
+            <tr style="background:var(--rose-pale);border-bottom:2px solid var(--rose-light)">
+              <th style="text-align:left;padding:.7rem .5rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--rose-deep)">Producto</th>
+              <th style="text-align:center;padding:.7rem .5rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--rose-deep)">Uds.</th>
+              <th style="text-align:left;padding:.7rem .5rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--rose-deep)">Clientes</th>
+              <th style="text-align:right;padding:.7rem .5rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--rose-deep)">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${salesTableRows}
+            <tr style="border-top:2px solid var(--rose-light);background:var(--rose-pale)">
+              <td colspan="2" style="padding:.7rem .5rem;font-weight:700;font-size:.85rem">TOTAL DEL MES</td>
+              <td></td>
+              <td style="text-align:right;padding:.7rem .5rem;font-weight:800;font-size:1rem;color:var(--rose-deep)">${fmt(totalVentas)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Barras top productos -->
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;margin:1.8rem 0 .75rem;color:var(--charcoal)">🏆 Más vendidos (por unidades)</h3>
       <div style="background:#fff;border-radius:var(--radius-lg);padding:1.2rem 1.4rem;box-shadow:var(--shadow-card)">
         <div class="bar-chart">
-          ${topProducts.map(([name, data], i) => `
+          ${topProducts.slice(0,8).map(([name, data], i) => `
             <div class="bar-row">
               <span class="bar-label" title="${name}">${i+1}. ${name}</span>
               <div class="bar-track">
@@ -611,6 +711,7 @@ async function loadAnalytics() {
               <span class="bar-qty">${data.qty} uds.</span>
             </div>`).join('')}
         </div>
-      </div>` : `<p style="color:var(--warm-gray);padding:1rem 0;font-size:.88rem">No hay pedidos aprobados en este período.</p>`}
+      </div>
+    ` : `<p style="color:var(--warm-gray);padding:1rem 0;font-size:.88rem">No hay pedidos aprobados en este período.</p>`}
   `;
 }

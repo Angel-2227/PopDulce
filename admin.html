@@ -64,6 +64,9 @@
         <button class="nav-item" data-panel="analytics">
           <span class="nav-icon">📊</span> Estadísticas
         </button>
+        <button class="nav-item" data-panel="reviews">
+          <span class="nav-icon">⭐</span> Reseñas
+        </button>
       </nav>
       <div class="sidebar-footer">
         <div class="user-info" id="userInfoSidebar"></div>
@@ -243,6 +246,16 @@
         </div>
       </section>
 
+      <!-- RESEÑAS -->
+      <section class="panel" id="panel-reviews" style="display:none">
+        <div class="panel-header">
+          <h2>Reseñas</h2>
+        </div>
+        <div id="adminReviewsList" class="admin-reviews-list">
+          <p class="loading-text">Cargando reseñas...</p>
+        </div>
+      </section>
+
     </main>
 
     <!-- Bottom Navigation Bar (mobile) -->
@@ -266,6 +279,10 @@
         <button class="admin-bn-item" data-panel="analytics" id="abn-analytics">
           <div class="abn-icon">📊</div>
           <span>Stats</span>
+        </button>
+        <button class="admin-bn-item" data-panel="reviews" id="abn-reviews">
+          <div class="abn-icon">⭐</div>
+          <span>Reseñas</span>
         </button>
         <a href="index.html" class="admin-bn-item" id="abn-store">
           <div class="abn-icon">🏪</div>
