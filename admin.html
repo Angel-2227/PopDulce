@@ -127,12 +127,12 @@
             <!-- Add items -->
             <div style="margin-top:1rem">
               <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--rose-deep);margin-bottom:.6rem">Productos del pedido</div>
-              <div style="display:grid;grid-template-columns:1fr auto auto;gap:.4rem;align-items:center;margin-bottom:.5rem">
-                <select id="mo-item-select" style="padding:.4rem .6rem;border:1.5px solid var(--rose-light);border-radius:8px;font-size:.82rem;font-family:inherit;background:#fff">
+              <div class="mo-add-row">
+                <select id="mo-item-select">
                   <option value="">— Selecciona un producto —</option>
                 </select>
-                <input type="number" id="mo-item-qty" value="1" min="1" style="width:58px;padding:.4rem .5rem;border:1.5px solid var(--rose-light);border-radius:8px;font-size:.82rem;font-family:inherit;text-align:center" />
-                <button id="moAddItemBtn" style="padding:.4rem .7rem;background:var(--rose-deep);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.82rem;white-space:nowrap">+ Add</button>
+                <input type="number" id="mo-item-qty" value="1" min="1" />
+                <button id="moAddItemBtn" class="btn-mo-add">+ Agregar</button>
               </div>
               <div id="moItemsList" style="min-height:32px"></div>
               <div style="text-align:right;margin-top:.5rem;font-weight:700;font-size:.95rem;color:var(--rose-deep)">

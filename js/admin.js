@@ -89,8 +89,12 @@ function setupAuth() {
     }
   });
 
-  document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
-  document.getElementById('abn-logout')?.addEventListener('click', () => signOut(auth));
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    if (confirm('¿Confirmas cerrar sesión?')) signOut(auth);
+  });
+  document.getElementById('abn-logout')?.addEventListener('click', () => {
+    if (confirm('¿Confirmas cerrar sesión?')) signOut(auth);
+  });
 }
 
 function showLoginError(msg) {
@@ -269,11 +273,12 @@ function renderOrders(orders) {
 }
 
 window._approveOrder = async id => {
+  if (!confirm('¿Confirmas aceptar este pedido?')) return;
   await updateDoc(doc(window._db, 'orders', id), { status:'approved', approvedAt: serverTimestamp() });
 };
 window._rejectOrder = async id => {
-  if (confirm('¿Rechazar este pedido?'))
-    await updateDoc(doc(window._db, 'orders', id), { status:'rejected' });
+  if (!confirm('¿Confirmas rechazar este pedido?')) return;
+  await updateDoc(doc(window._db, 'orders', id), { status:'rejected' });
 };
 
 // ── PEDIDO MANUAL ─────────────────────────────────────────────
@@ -705,18 +710,69 @@ async function loadAnalytics() {
   const content = document.getElementById('analyticsContent');
 
   const monthSel = document.getElementById('analyticsMonth');
-  if (!monthSel.options.length) {
-    const now = new Date();
-    // Generate options for the next 2 years from current month, and back 12 months
-    for (let i = -2; i < 24; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const opt = document.createElement('option');
-      opt.value = `${d.getFullYear()}-${d.getMonth()}`;
-      opt.textContent = d.toLocaleDateString('es-CO', { month:'long', year:'numeric' });
-      if (i === 0) opt.selected = true;
-      monthSel.appendChild(opt);
+  const START_YEAR = 2026, START_MONTH = 2; // marzo 2026 (mes 0-indexado)
+
+  content.innerHTML = '<p class="loading-text">Calculando...</p>';
+
+  // Siempre traemos TODOS los pedidos para detectar meses con ventas
+  let allOrdersGlobal = [];
+  try {
+    const snapAll = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'asc')));
+    allOrdersGlobal = snapAll.docs.map(d => ({ id:d.id, ...d.data() }));
+  } catch (e) {
+    content.innerHTML = '<p class="loading-text">Configura Firebase para ver estadísticas.</p>'; return;
+  }
+
+  // Meses con al menos un pedido aprobado (desde marzo 2026 en adelante)
+  const monthsWithSales = new Set();
+  allOrdersGlobal.forEach(o => {
+    if (o.status !== 'approved' || !o.createdAt) return;
+    const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+    const y = d.getFullYear(), m = d.getMonth();
+    // Solo contar desde marzo 2026
+    if (y > START_YEAR || (y === START_YEAR && m >= START_MONTH)) {
+      monthsWithSales.add(`${y}-${m}`);
     }
-    monthSel.addEventListener('change', loadAnalytics);
+  });
+
+  // Construir lista de meses visibles: meses con ventas + mes actual + 5 meses futuros
+  const now = new Date();
+  const visibleMonths = new Set(monthsWithSales);
+  for (let i = 0; i <= 5; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    if (y > START_YEAR || (y === START_YEAR && m >= START_MONTH)) {
+      visibleMonths.add(`${y}-${m}`);
+    }
+  }
+
+  // Ordenar cronológicamente de más reciente a más antiguo
+  const sortedMonths = [...visibleMonths].sort((a, b) => {
+    const [ay, am] = a.split('-').map(Number);
+    const [by, bm] = b.split('-').map(Number);
+    return (by * 12 + bm) - (ay * 12 + am); // más reciente primero
+  });
+
+  // Repoblar selector si la lista cambió
+  const currentVal = monthSel.value;
+  const newKey = sortedMonths.join(',');
+  if (monthSel.dataset.loadedKey !== newKey) {
+    monthSel.innerHTML = '';
+    sortedMonths.forEach(key => {
+      const [y, m] = key.split('-').map(Number);
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = new Date(y, m, 1).toLocaleDateString('es-CO', { month:'long', year:'numeric' });
+      monthSel.appendChild(opt);
+    });
+    monthSel.dataset.loadedKey = newKey;
+    // Seleccionar mes actual si existe, si no el primero (más reciente)
+    const todayKey = `${now.getFullYear()}-${now.getMonth()}`;
+    monthSel.value = sortedMonths.includes(todayKey) ? todayKey : (sortedMonths[0] || todayKey);
+    if (!monthSel._listenerSet) {
+      monthSel.addEventListener('change', loadAnalytics);
+      monthSel._listenerSet = true;
+    }
   }
 
   const [year, month] = monthSel.value.split('-').map(Number);
@@ -725,20 +781,14 @@ async function loadAnalytics() {
 
   content.innerHTML = '<p class="loading-text">Calculando...</p>';
 
+  // Filtrar pedidos del mes seleccionado a partir de los ya cargados
   let allOrders = [], approvedOrders = [];
-  try {
-    const snap = await getDocs(
-      query(collection(db, 'orders'), orderBy('createdAt', 'asc'))
-    );
-    allOrders = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(o => {
-      if (!o.createdAt) return false;
-      const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
-      return d >= start && d <= end;
-    });
-    approvedOrders = allOrders.filter(o => o.status === 'approved');
-  } catch (e) {
-    content.innerHTML = '<p class="loading-text">Configura Firebase para ver estadísticas.</p>'; return;
-  }
+  allOrders = allOrdersGlobal.filter(o => {
+    if (!o.createdAt) return false;
+    const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+    return d >= start && d <= end;
+  });
+  approvedOrders = allOrders.filter(o => o.status === 'approved');
 
   const totalVentas    = approvedOrders.reduce((s, o) => s + (o.total || 0), 0);
   const numAprobados   = approvedOrders.length;
