@@ -149,13 +149,11 @@ function showStep(index) {
   // Build bubble content
   const avatarHtml = `
     <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.65rem">
-      <div style="width:42px;height:42px;border-radius:50%;background:var(--rose-pale,#fce8ea);
-                  display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
-                  border:2px solid var(--rose-light,#f7bfc6)">
-        <img src="assets/avatar.png" alt="Guía"
-             style="width:100%;height:100%;object-fit:cover;border-radius:50%"
-             onerror="this.style.display='none';this.parentElement.textContent='🐭'" />
-      </div>
+      <div style="width:80px;height:80px;flex-shrink:0;display:flex;align-items:flex-end;justify-content:center">
+  <img src="assets/avatar.png" alt="Guía"
+       style="width:80px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(201,84,122,.25))"
+       onerror="this.style.display='none';this.parentElement.textContent='🐭'" />
+</div>
       <div>
         <div style="font-size:.65rem;color:var(--rose-deep,#c9547a);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Tu guía PopDulce</div>
         <div style="font-size:.92rem;font-weight:700;color:#2d2d2d;line-height:1.2">${step.title}</div>
