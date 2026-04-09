@@ -90,6 +90,7 @@ function setupAuth() {
   });
 
   document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+  document.getElementById('abn-logout')?.addEventListener('click', () => signOut(auth));
 }
 
 function showLoginError(msg) {

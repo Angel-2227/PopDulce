@@ -70,9 +70,7 @@
       </nav>
       <div class="sidebar-footer">
         <div class="user-info" id="userInfoSidebar"></div>
-        <button id="pwaInstallBtnAdmin" style="display:none;width:100%;margin-bottom:.5rem;padding:.55rem 1rem;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-family:var(--font-body);font-size:.8rem;cursor:pointer">
-          📲 Instalar app
-        </button>
+        
         <button class="btn-logout" id="logoutBtn">Cerrar sesión</button>
         <a href="index.html" style="font-size:.75rem;color:rgba(255,255,255,.3);padding:.3rem .5rem;display:block">← Ver tienda</a>
       </div>
@@ -291,6 +289,10 @@
           <div class="abn-icon">🏪</div>
           <span>Tienda</span>
         </a>
+        <button class="admin-bn-item" id="abn-logout">
+          <div class="abn-icon">🚪</div>
+          <span>Salir</span>
+        </button>
       </div>
     </nav>
   </div>
@@ -308,39 +310,66 @@
     const { initAdmin } = await import('./js/admin.js');
     initAdmin();
 
-    // ── PWA Install (admin) ────────────────────────────────────
+    // ── PWA Install – botón flotante ───────────────────────────
     let deferredPrompt = null;
-    const pwaBtn = document.getElementById('pwaInstallBtnAdmin');
 
-    // Capturar prompt nativo si llega (Chrome Android)
+    // Crear botón flotante
+    const pwaFloat = document.createElement('div');
+    pwaFloat.id = 'pwaFloatBtn';
+    pwaFloat.innerHTML = `
+      <button id="pwaInstallTrigger">📲 Instalar app</button>
+      <button id="pwaFloatClose" aria-label="Cerrar">✕</button>
+    `;
+    document.body.appendChild(pwaFloat);
+
+    // Mostrar solo si no está instalada como standalone
+    function showPwaBtn() {
+      if (!window.matchMedia('(display-mode: standalone)').matches) {
+        pwaFloat.style.display = 'flex';
+      }
+    }
+
+    // Capturar prompt nativo (Chrome/Edge Android)
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       deferredPrompt = e;
+      showPwaBtn();
     });
 
-    // Mostrar botón apenas carga el panel (ya estamos autenticados aquí)
-    // Si ya está instalada como PWA standalone → no mostrar
-    if (!window.matchMedia('(display-mode: standalone)').matches && pwaBtn) {
-      pwaBtn.style.display = 'block';
-    }
+    // En iOS no dispara beforeinstallprompt → mostrar igual
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    if (isIOS) showPwaBtn();
 
-    pwaBtn?.addEventListener('click', async () => {
+    document.getElementById('pwaInstallTrigger').addEventListener('click', async () => {
       if (deferredPrompt) {
-        // Chrome Android: prompt nativo
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         deferredPrompt = null;
-        if (outcome === 'accepted') { pwaBtn.style.display = 'none'; return; }
+        if (outcome === 'accepted') { pwaFloat.style.display = 'none'; return; }
+      } else if (isIOS) {
+        // Toast en iOS en vez de alert
+        showPwaToast('Toca Compartir (□↑) → "Añadir a inicio"');
+      } else {
+        showPwaToast('Toca ⋮ en tu navegador → "Instalar aplicación"');
       }
-      // Fallback: instrucciones según dispositivo
-      const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-      alert(isIOS
-        ? '📲 Para instalar: toca el botón Compartir (□↑) → "Añadir a pantalla de inicio"'
-        : '📲 Para instalar: toca los 3 puntos del navegador → "Instalar aplicación" o "Añadir a pantalla de inicio"'
-      );
     });
 
-    window.addEventListener('appinstalled', () => { if (pwaBtn) pwaBtn.style.display = 'none'; });
+    document.getElementById('pwaFloatClose').addEventListener('click', () => {
+      pwaFloat.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => { pwaFloat.style.display = 'none'; });
+
+    function showPwaToast(msg) {
+      const t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = `position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%);
+        background:rgba(46,34,40,.92);color:#fff;padding:.7rem 1.2rem;border-radius:20px;
+        font-size:.82rem;z-index:2000;white-space:nowrap;pointer-events:none;
+        box-shadow:0 4px 16px rgba(0,0,0,.3)`;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
   </script>
 </body>
 </html>
