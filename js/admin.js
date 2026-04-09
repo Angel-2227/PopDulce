@@ -13,6 +13,8 @@ import {
   doc, query, where, orderBy, serverTimestamp, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+import { checkInboxNotifications } from "./notifications.js";
+
 const ADMIN_EMAILS = ['rubioquirozailyn@gmail.com','samuzuluaga4@gmail.com','juanrubio2277@gmail.com'];
 const WA_AILYN     = '573193696869';
 const WA_SAMUEL    = '573167719181';
@@ -57,6 +59,7 @@ function setupAuth() {
       document.getElementById('userInfoMobile').textContent = short;
       document.getElementById('userInfoSidebar').textContent = user.email;
       loadOrders();
+      checkInboxNotifications(window._db, user.email);
     } else {
       document.getElementById('loginGate').style.display = 'flex';
       document.getElementById('dashboard').style.display = 'none';
