@@ -83,15 +83,76 @@
       <section class="panel" id="panel-orders">
         <div class="panel-header">
           <h2>Pedidos</h2>
-          <select id="orderFilter" class="filter-select">
-            <option value="pending">Pendientes</option>
-            <option value="approved">Aprobados</option>
-            <option value="rejected">Rechazados</option>
-            <option value="all">Todos</option>
-          </select>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <button class="btn-panel-action" id="newManualOrderBtn" style="background:var(--rose-deep)">+ Pedido manual</button>
+            <select id="orderFilter" class="filter-select">
+              <option value="pending">Pendientes</option>
+              <option value="approved">Aprobados</option>
+              <option value="rejected">Rechazados</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
         </div>
         <div id="ordersList" class="orders-list">
           <p class="loading-text">Cargando pedidos...</p>
+        </div>
+
+        <!-- Manual order modal -->
+        <div class="product-form-overlay" id="manualOrderOverlay" style="display:none">
+          <div class="product-form-modal" style="max-width:500px">
+            <h3>📝 Registrar pedido manual</h3>
+            <div class="form-grid">
+              <div class="form-group form-full">
+                <label>Nombre del cliente *</label>
+                <input type="text" id="mo-name" placeholder="Ej: María García" />
+              </div>
+              <div class="form-group">
+                <label>Tipo de contacto</label>
+                <select id="mo-contact-type">
+                  <option value="phone">📱 Teléfono / WhatsApp</option>
+                  <option value="email">✉️ Correo electrónico</option>
+                  <option value="ig">📸 Instagram</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Contacto</label>
+                <input type="text" id="mo-contact" placeholder="Número, correo o @usuario" />
+              </div>
+              <div class="form-group form-full">
+                <label>Notas (opcional)</label>
+                <textarea id="mo-notes" rows="2" placeholder="Dirección, referencias, personalizaciones..."></textarea>
+              </div>
+            </div>
+
+            <!-- Add items -->
+            <div style="margin-top:1rem">
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--rose-deep);margin-bottom:.6rem">Productos del pedido</div>
+              <div style="display:grid;grid-template-columns:1fr auto auto;gap:.4rem;align-items:center;margin-bottom:.5rem">
+                <select id="mo-item-select" style="padding:.4rem .6rem;border:1.5px solid var(--rose-light);border-radius:8px;font-size:.82rem;font-family:inherit;background:#fff">
+                  <option value="">— Selecciona un producto —</option>
+                </select>
+                <input type="number" id="mo-item-qty" value="1" min="1" style="width:58px;padding:.4rem .5rem;border:1.5px solid var(--rose-light);border-radius:8px;font-size:.82rem;font-family:inherit;text-align:center" />
+                <button id="moAddItemBtn" style="padding:.4rem .7rem;background:var(--rose-deep);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.82rem;white-space:nowrap">+ Add</button>
+              </div>
+              <div id="moItemsList" style="min-height:32px"></div>
+              <div style="text-align:right;margin-top:.5rem;font-weight:700;font-size:.95rem;color:var(--rose-deep)">
+                Total: <span id="moTotal">$0</span>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top:1rem">
+              <label>Estado inicial</label>
+              <select id="mo-status">
+                <option value="approved">✅ Aprobado (ya confirmado)</option>
+                <option value="pending">⏳ Pendiente (revisar después)</option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-cancel" id="cancelManualOrder">Cancelar</button>
+              <button class="btn-save"   id="moSaveBtn">Guardar pedido</button>
+            </div>
+          </div>
         </div>
       </section>
 

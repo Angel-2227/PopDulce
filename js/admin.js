@@ -125,6 +125,7 @@ function setupNavigation() {
     });
   });
   document.getElementById('orderFilter')?.addEventListener('change', e => loadOrders(e.target.value));
+  setupManualOrderForm();
 }
 
 function setupAdminBottomNav() {
@@ -214,18 +215,46 @@ function renderOrders(orders) {
   }
   list.innerHTML = orders.map(order => {
     const items = (order.items || []).map(i => `${i.name} × ${i.qty} — ${fmt(i.subtotal||i.price*i.qty)}`).join('<br>');
+
+    // Contact display
+    let contactLine = '';
+    if (order.contactType === 'email' && order.clientEmail) {
+      contactLine = `<p>✉️ ${order.clientEmail}</p>`;
+    } else if (order.contactType === 'ig' && order.clientInstagram) {
+      contactLine = `<p>📸 @${order.clientInstagram}</p>`;
+    } else if (order.clientPhone) {
+      contactLine = `<p>📱 ${order.clientPhone}</p>`;
+    }
+
+    // WhatsApp button only if phone available
+    const waBtn = order.clientPhone
+      ? `<button class="btn-wa-client"
+                onclick="window.open('https://wa.me/57${order.clientPhone.replace(/\D/g,'')}','_blank')">
+          💬 WhatsApp cliente
+        </button>`
+      : '';
+
+    const sourceBadge = order.source === 'manual'
+      ? `<span style="font-size:.62rem;background:#e8f4fd;color:#1a6fa8;border-radius:20px;padding:.12rem .45rem;font-weight:600;margin-left:.4rem">manual</span>`
+      : '';
+
+    const notesBadge = order.notes
+      ? `<div style="margin-top:.4rem;font-size:.78rem;color:var(--warm-gray);font-style:italic">📝 ${order.notes}</div>`
+      : '';
+
     return `
       <div class="order-card ${order.status}" id="order-${order.id}">
         <div class="order-top">
           <div class="order-client">
-            <h4>👤 ${order.clientName}</h4>
-            <p>📱 ${order.clientPhone}</p>
+            <h4>👤 ${order.clientName}${sourceBadge}</h4>
+            ${contactLine}
           </div>
           <div class="order-meta">
             <span class="order-status status-${order.status}">${statusLabel(order.status)}</span>
             <div class="order-date">${fmtDate(order.createdAt)}</div>
           </div>
         </div>
+        ${notesBadge}
         <div class="order-items">${items}</div>
         <div class="order-total">${fmt(order.total || 0)}</div>
         <div class="order-actions">
@@ -233,10 +262,7 @@ function renderOrders(orders) {
             <button class="btn-approve" onclick="window._approveOrder('${order.id}')">✓ Aprobar</button>
             <button class="btn-reject"  onclick="window._rejectOrder('${order.id}')">✕ Rechazar</button>
           ` : ''}
-          <button class="btn-wa-client"
-                  onclick="window.open('https://wa.me/57${order.clientPhone.replace(/\D/g,'')}','_blank')">
-            💬 WhatsApp cliente
-          </button>
+          ${waBtn}
         </div>
       </div>`;
   }).join('');
@@ -249,6 +275,144 @@ window._rejectOrder = async id => {
   if (confirm('¿Rechazar este pedido?'))
     await updateDoc(doc(window._db, 'orders', id), { status:'rejected' });
 };
+
+// ── PEDIDO MANUAL ─────────────────────────────────────────────
+let manualOrderItems = [];
+
+function setupManualOrderForm() {
+  const btn = document.getElementById('newManualOrderBtn');
+  if (!btn || btn._setup) return;
+  btn._setup = true;
+
+  btn.addEventListener('click', openManualOrderForm);
+  document.getElementById('cancelManualOrder').addEventListener('click', () => {
+    document.getElementById('manualOrderOverlay').style.display = 'none';
+  });
+  document.getElementById('moAddItemBtn').addEventListener('click', addManualOrderItem);
+  document.getElementById('moSaveBtn').addEventListener('click', saveManualOrder);
+}
+
+async function openManualOrderForm() {
+  manualOrderItems = [];
+  renderManualItems();
+  document.getElementById('mo-name').value         = '';
+  document.getElementById('mo-contact').value      = '';
+  document.getElementById('mo-contact-type').value = 'phone';
+  document.getElementById('mo-notes').value        = '';
+  document.getElementById('mo-status').value       = 'approved';
+  document.getElementById('mo-item-qty').value     = '1';
+
+  // Populate product selector from DB
+  const sel = document.getElementById('mo-item-select');
+  sel.innerHTML = '<option value="">Cargando productos…</option>';
+  try {
+    const snap = await getDocs(
+      query(collection(window._db, 'products'),
+        where('active', '==', true),
+        orderBy('order', 'asc'))
+    );
+    const products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    sel.innerHTML = '<option value="">— Selecciona un producto —</option>' +
+      products.map(p =>
+        `<option value="${p.id}" data-price="${p.price}" data-name="${p.name.replace(/"/g,'&quot;')}">
+          ${p.emoji || '🍰'} ${p.name} — ${fmt(p.price)}
+        </option>`
+      ).join('');
+  } catch (e) {
+    sel.innerHTML = '<option value="">Error cargando productos</option>';
+  }
+
+  document.getElementById('manualOrderOverlay').style.display = 'flex';
+}
+
+function addManualOrderItem() {
+  const sel  = document.getElementById('mo-item-select');
+  const opt  = sel.options[sel.selectedIndex];
+  const qty  = Number(document.getElementById('mo-item-qty').value) || 1;
+
+  if (!sel.value) { alert('Selecciona un producto.'); return; }
+
+  const name  = opt.dataset.name;
+  const price = Number(opt.dataset.price);
+
+  // If already in list, increment qty
+  const existing = manualOrderItems.find(i => i.name === name && i.price === price);
+  if (existing) {
+    existing.qty     += qty;
+    existing.subtotal = existing.price * existing.qty;
+  } else {
+    manualOrderItems.push({ name, price, qty, subtotal: price * qty });
+  }
+
+  sel.value = '';
+  document.getElementById('mo-item-qty').value = '1';
+  renderManualItems();
+}
+
+function renderManualItems() {
+  const list  = document.getElementById('moItemsList');
+  const total = manualOrderItems.reduce((s, i) => s + i.subtotal, 0);
+  if (!manualOrderItems.length) {
+    list.innerHTML = '<p style="color:var(--warm-gray);font-size:.8rem;margin:.4rem 0">Sin productos aún.</p>';
+  } else {
+    list.innerHTML = manualOrderItems.map((item, idx) => `
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid var(--rose-pale)">
+        <span style="flex:1;font-size:.83rem">${item.name} × ${item.qty}</span>
+        <span style="font-size:.83rem;color:var(--rose-deep);font-weight:600">${fmt(item.subtotal)}</span>
+        <button onclick="window._removeManualItem(${idx})"
+          style="background:none;border:none;cursor:pointer;color:#aaa;font-size:.9rem;padding:0 .2rem">✕</button>
+      </div>`).join('');
+  }
+  document.getElementById('moTotal').textContent = fmt(total);
+}
+
+window._removeManualItem = idx => {
+  manualOrderItems.splice(idx, 1);
+  renderManualItems();
+};
+
+async function saveManualOrder() {
+  const name    = document.getElementById('mo-name').value.trim();
+  const contact = document.getElementById('mo-contact').value.trim();
+  const type    = document.getElementById('mo-contact-type').value;
+  const notes   = document.getElementById('mo-notes').value.trim();
+  const status  = document.getElementById('mo-status').value;
+
+  if (!name)                    { alert('El nombre del cliente es obligatorio.'); return; }
+  if (!manualOrderItems.length) { alert('Agrega al menos un producto.'); return; }
+
+  const total = manualOrderItems.reduce((s, i) => s + i.subtotal, 0);
+
+  const contactData = {};
+  if (type === 'phone')      contactData.clientPhone     = contact;
+  else if (type === 'email') contactData.clientEmail     = contact;
+  else if (type === 'ig')    contactData.clientInstagram = contact;
+
+  const order = {
+    clientName: name,
+    ...contactData,
+    contactType: type,
+    notes,
+    items: manualOrderItems,
+    total,
+    status,
+    source: 'manual',
+    createdAt: serverTimestamp(),
+    ...(status === 'approved' ? { approvedAt: serverTimestamp() } : {})
+  };
+
+  try {
+    const btn = document.getElementById('moSaveBtn');
+    btn.textContent = 'Guardando…'; btn.disabled = true;
+    await addDoc(collection(window._db, 'orders'), order);
+    document.getElementById('manualOrderOverlay').style.display = 'none';
+    btn.textContent = 'Guardar pedido'; btn.disabled = false;
+  } catch (e) {
+    alert('Error guardando pedido: ' + e.message);
+    document.getElementById('moSaveBtn').textContent = 'Guardar pedido';
+    document.getElementById('moSaveBtn').disabled = false;
+  }
+}
 
 // ── PRODUCTOS ─────────────────────────────────────────────────
 let adminProducts = [];
