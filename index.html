@@ -75,6 +75,8 @@
   }
   </script>
 
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#c9547a" />
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -115,6 +117,8 @@
           </svg>
           <span class="cart-count" id="cartCount"></span>
         </button>
+        <!-- Botón instalar PWA: solo se muestra si el navegador lo soporta Y el usuario es admin -->
+        <button id="pwaInstallBtn" style="display:none" class="admin-link" title="Instalar app" aria-label="Instalar aplicación">📲</button>
         <a href="admin.html" class="admin-link" title="Administrar">⚙</a>
         <button class="hamburger" id="hamburger" aria-label="Menú">
           <span></span><span></span><span></span>
@@ -470,7 +474,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import FIREBASE_CONFIG   from './js/firebase-config.js';
 
     const app    = initializeApp(FIREBASE_CONFIG);
@@ -479,8 +483,43 @@
 
     const { initCatalog } = await import('./js/catalog.js');
     const { initStories } = await import('./js/stories.js');
+    const { initTutorial } = await import('./js/tutorial.js');
     initCatalog();
     initStories();
+    initTutorial();
+
+    // ── PWA Install: solo admins ──────────────────────────────
+    const ADMIN_EMAILS = ['rubioquirozailyn@gmail.com','juanrubio2277@gmail.com','samuzuluaga4@gmail.com'];
+    let deferredPrompt = null;
+    const pwaBtn = document.getElementById('pwaInstallBtn');
+
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Solo mostrar si es admin
+      onAuthStateChanged(window._auth, user => {
+        if (user && ADMIN_EMAILS.includes(user.email)) {
+          pwaBtn.style.display = 'inline-flex';
+        }
+      });
+    });
+
+    pwaBtn?.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') pwaBtn.style.display = 'none';
+      deferredPrompt = null;
+    });
+
+    // Si ya está instalada como PWA, ocultar botón
+    window.addEventListener('appinstalled', () => { pwaBtn.style.display = 'none'; });
+  </script>
+  <!-- Service Worker para PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
   </script>
 </body>
 </html>
