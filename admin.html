@@ -311,18 +311,35 @@
     // ── PWA Install (admin) ────────────────────────────────────
     let deferredPrompt = null;
     const pwaBtn = document.getElementById('pwaInstallBtnAdmin');
+
+    // Capturar prompt nativo si llega (Chrome Android)
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       deferredPrompt = e;
-      if (pwaBtn) pwaBtn.style.display = 'block';
     });
+
+    // Mostrar botón apenas carga el panel (ya estamos autenticados aquí)
+    // Si ya está instalada como PWA standalone → no mostrar
+    if (!window.matchMedia('(display-mode: standalone)').matches && pwaBtn) {
+      pwaBtn.style.display = 'block';
+    }
+
     pwaBtn?.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') pwaBtn.style.display = 'none';
-      deferredPrompt = null;
+      if (deferredPrompt) {
+        // Chrome Android: prompt nativo
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (outcome === 'accepted') { pwaBtn.style.display = 'none'; return; }
+      }
+      // Fallback: instrucciones según dispositivo
+      const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+      alert(isIOS
+        ? '📲 Para instalar: toca el botón Compartir (□↑) → "Añadir a pantalla de inicio"'
+        : '📲 Para instalar: toca los 3 puntos del navegador → "Instalar aplicación" o "Añadir a pantalla de inicio"'
+      );
     });
+
     window.addEventListener('appinstalled', () => { if (pwaBtn) pwaBtn.style.display = 'none'; });
   </script>
 </body>
